@@ -8,7 +8,13 @@ import csv
 def main():
     inconsistencies_found = false
 
+    try:
+        with open(file) as csvfile:
+            for row
 
+
+    except:
+        exit(1) #might need to do some other stuff instead
 
 
 
