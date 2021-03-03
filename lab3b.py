@@ -1,4 +1,25 @@
+import sys
+import csv
 
 
-class SuperBlock:
-    """Class for the super block"""
+
+
+
+def main():
+    inconsistencies_found = false
+
+
+
+
+
+
+    if inconsistencies_found:
+        exit(2)
+
+    exit(0)
+
+if __name__ == '__main__':
+    main()
+
+
+
