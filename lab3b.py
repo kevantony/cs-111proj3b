@@ -1,8 +1,10 @@
 import sys
 import csv
 
+
 class SuperBlock:
     """Creates a class for the information relating to the superblock."""
+
     def __init__(self, row):
         self.num_of_blocks = int(row[1])
         self.num_of_inodes = int(row[2])
@@ -12,8 +14,10 @@ class SuperBlock:
         self.inode_per_group = int(row[6])
         self.first_nonres_inode = int(row[7])
 
+
 class Group:
     """Creates a class for the group info."""
+
     def __init__(self, row):
         self.total_num_blocks_in_group = int(row[2])
         self.total_num_inodes_in_group = int(row[3])
@@ -33,8 +37,9 @@ class DIRENT:
         self.name_length = int(row[5])
         self.name = row[6]
 
+
 class INDIRECT:
-    def __init__(self.row):
+    def __init__(self, row):
         self.parent_inode_number = int(row[1])
         self.indirextion = int(row[2])
         self.logical_block_offset = int(row[3])
@@ -42,7 +47,7 @@ class INDIRECT:
         self.reference_block_number = int(row[5])
 
 
-class inodes:
+class INODE:
     def __init__(self, row):
         self.inode_number = int(row[1])
         self.file_type = row[2]
@@ -57,12 +62,13 @@ class inodes:
         self.block_space = int(row[11])
 
 
-
 def main():
     inconsistencies_found = false
     free_blocks = []
     free_inodes = []
     inodes = []
+    direct_entries = []
+    indirect_entries = []
 
     try:
         with open(file) as csvfile:
@@ -74,20 +80,21 @@ def main():
                 elif row[0] = 'BFREE':
                     free_blocks.append(int(row[1]))
                 elif row[0] = 'IFREE':
-                    free_inodes.append(int(row[1])) #IRFREE action
+                    free_inodes.append(int(row[1]))  # IRFREE action
                 elif row[0] = 'INODE':
-                    #INODE action
+                    inode = INODE(row)
+                    inodes.append(inode)
                 elif row[0] = 'DIRENT':
-                    DIRENT(row)#DIRENT action
+                    dirent = DIRENT(row)  # DIRENT action
+                    direct_entries.append(dirent)
                 elif row[0] = 'INDIRECT':
-                    #INDIRECT action
+                    indirect_entry = INDIRECT(row)  # INDIRECT action
+                    indirect_entries.append(indirect_entry)
                 else:
-                    #Invalid option
+                    # Invalid option
 
-                
     except:
-        sys.exit(1) #might need to do some other stuff instead
-
+        sys.exit(1)  # might need to do some other stuff instead
 
     if gorup.num_free_blocks != (group.total_num_blocks_in_group - len(free_blocks)):
         print("")
@@ -97,8 +104,6 @@ def main():
 
     sys.exit(0)
 
+
 if __name__ == '__main__':
     main()
-
-
-
