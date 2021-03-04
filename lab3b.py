@@ -1,6 +1,7 @@
 import sys
 import csv
 
+inconsistencies_found = false
 
 class SuperBlock:
     """Creates a class for the information relating to the superblock."""
@@ -48,7 +49,7 @@ class INDIRECT:
 
 
 class INODE:
-    def __init__(self, row):
+    def __init__(self, row, direct_and_indirect):
         self.inode_number = int(row[1])
         self.file_type = row[2]
         self.mode = int(row[3])
@@ -60,15 +61,23 @@ class INODE:
         self.last_access = row[9]
         self.file_size = int(row[10])
         self.block_space = int(row[11])
+        self.block_list = direct_and_indirect[12:24]
+        self.indirect_list = direct_and_indirect[24:27]
+
+
+
+def block_checker(free_blocks, superblock, group):
 
 
 def main():
-    inconsistencies_found = false
     free_blocks = []
     free_inodes = []
     inodes = []
     direct_entries = []
     indirect_entries = []
+    superblock = None
+    group = None
+
 
     try:
         with open(file) as csvfile:
@@ -82,7 +91,10 @@ def main():
                 elif row[0] = 'IFREE':
                     free_inodes.append(int(row[1]))  # IRFREE action
                 elif row[0] = 'INODE':
-                    inode = INODE(row)
+                    direct_and_indirect = []
+                    for i in range(12, 27):
+                        direct_and_indirect.append(int(row[i]))
+                    inode = INODE(row, direct_and_indirect)
                     inodes.append(inode)
                 elif row[0] = 'DIRENT':
                     dirent = DIRENT(row)  # DIRENT action
@@ -95,6 +107,13 @@ def main():
 
     except:
         sys.exit(1)  # might need to do some other stuff instead
+
+
+    for inode in inodes:
+        
+
+
+
 
     if gorup.num_free_blocks != (group.total_num_blocks_in_group - len(free_blocks)):
         print("")
