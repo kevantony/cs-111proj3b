@@ -2,7 +2,7 @@ import sys
 import csv
 
 
-class SuperBlock:
+class SUPERBLOCK:
     """Creates a class for the information relating to the superblock."""
 
     def __init__(self, row):
@@ -15,7 +15,7 @@ class SuperBlock:
         self.first_nonres_inode = int(row[7])
 
 
-class Group:
+class GROUP:
     """Creates a class for the group info."""
 
     def __init__(self, row):
@@ -61,43 +61,77 @@ class INODE:
         self.file_size = int(row[10])
         self.block_space = int(row[11])
 
+def inode_errors(inodes, free_inodes, superblock, group):
+    alloc_inodes = []
+
+    for inode in inodes:
+        if inode.inode_number != 0:
+            inode_val = inode.inode_number
+            alloc_inodes.append(inode_val)
+            if inode_val in free_inodes:
+                alloc_inodes.append(inode_val)
+                print("ALLOCATED INODE {inode_num} ON FREELIST".format(inode_num = inode_val))
+        
+            
+    for alloc_inode_val in range(superblock.first_nonres_inode, group.total_num_inodes_in_group):
+        if alloc_inode_val not in alloc_inodes and alloc_inode_val not in free_inodes:
+            print("UNALLOCATED INODE {inode_num} NOT ON FREELIST".format(inode_num = alloc_inode_val))
+
+
+
+    
+
 
 def main():
-    inconsistencies_found = false
+    
+    inconsistencies_found = False
     free_blocks = []
     free_inodes = []
     inodes = []
     direct_entries = []
     indirect_entries = []
 
+    if(len(sys.argv) != 2):
+        print("Error in the input argument.")
+        sys.exit(2)
     try:
-        with open(file) as csvfile:
+        with open(sys.argv[1]) as file:
+            csvfile = csv.reader(file)
             for row in csvfile:
                 if row[0] == 'SUPERBLOCK':
                     superblock = SUPERBLOCK(row)
+                    #print("supblock")
                 elif row[0] == 'GROUP':
-                    gorup = Group(row)
-                elif row[0] = 'BFREE':
+                    group = GROUP(row)
+                    #print("group")
+                elif row[0] == 'BFREE':
                     free_blocks.append(int(row[1]))
-                elif row[0] = 'IFREE':
+                    #print("freeblocks")
+                elif row[0] == 'IFREE':
                     free_inodes.append(int(row[1]))  # IRFREE action
-                elif row[0] = 'INODE':
+                    #print("freeinodes")
+                elif row[0] == 'INODE':
                     inode = INODE(row)
                     inodes.append(inode)
-                elif row[0] = 'DIRENT':
+                    #print("inodes")
+                elif row[0] == 'DIRENT':
                     dirent = DIRENT(row)  # DIRENT action
                     direct_entries.append(dirent)
-                elif row[0] = 'INDIRECT':
+                    #print("dirents")
+                elif row[0] == 'INDIRECT':
                     indirect_entry = INDIRECT(row)  # INDIRECT action
                     indirect_entries.append(indirect_entry)
-                else:
-                    # Invalid option
-
+                    #print("indirectentrs")
     except:
+        print("Unable to read csv.")
         sys.exit(1)  # might need to do some other stuff instead
 
-    if gorup.num_free_blocks != (group.total_num_blocks_in_group - len(free_blocks)):
+    if group.num_free_blocks != (group.total_num_blocks_in_group - len(free_blocks)):
         print("")
+
+    
+
+    inode_errors(inodes, free_inodes, superblock, group)
 
     if inconsistencies_found:
         sys.exit(2)
