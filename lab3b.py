@@ -2,6 +2,7 @@ import sys
 import csv
 
 inconsistencies_found = False
+alloc_inodes = []
 
 class SUPERBLOCK:
     """Creates a class for the information relating to the superblock."""
@@ -70,8 +71,6 @@ class INODE:
 
 
 def inode_errors(inodes, free_inodes, superblock, group):
-    alloc_inodes = []
-
     for inode in inodes:
         if inode.inode_number != 0:
             inode_val = inode.inode_number
@@ -79,11 +78,46 @@ def inode_errors(inodes, free_inodes, superblock, group):
             if inode_val in free_inodes:
                 alloc_inodes.append(inode_val)
                 print("ALLOCATED INODE {inode_num} ON FREELIST".format(inode_num = inode_val))
+                inconsistencies_found = True
         
             
     for alloc_inode_val in range(superblock.first_nonres_inode, group.total_num_inodes_in_group):
         if alloc_inode_val not in alloc_inodes and alloc_inode_val not in free_inodes:
             print("UNALLOCATED INODE {inode_num} NOT ON FREELIST".format(inode_num = alloc_inode_val))
+            inconsistencies_found = True
+
+def direct_entries_errors(inodes, direct_entries, superblock):
+    
+    counter = 0
+    links = {}
+    inode_parent = {}
+    #need to populate parent dictionary
+    for dir in direct_entries:
+        if dir.name != "'.'" and dir.name != "'..'":
+            inode_parent[dir.inode_number] = dir.parent_inode_number
+    
+    for dir in direct_entries:
+        if(dir.inode_number < 0 or dir.inode_number > superblock.num_of_inodes):
+            print("DIRECTORY INODE {inode_num} NAME {dir_name} INVALID INODE {dir_inode_num}".format(inode_num = dir.parent_inode_number, dir_name = dir.name, dir_inode_num 
+            = dir.inode_number))
+        elif(dir.inode_number not in alloc_inodes):
+            print("DIRECTORY INODE {inode_num} NAME {dir_name} UNALLOCATED INODE {dir_inode_num}".format(dir_inode_num 
+            = dir.inode_number, dir_name = dir.name, inode_num = dir.parent_inode_number))
+        elif(dir.name is "'.'" and dir.parent_inode_number != dir.inode_number):
+            print("DIRECTORY INODE {inode_num} NAME '.' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
+            = dir.inode_number, inode_num = dir.parent_inode_number))
+        elif(dir.name is not "'.'" and dir.name is not "'..'"):
+            if(dir.inode_number not in links):
+                 links[dir.inode_number] = 1
+            else:
+                 links[dir.inode_number]+=1
+    
+    for inode in inodes:
+        if(links[inode.inode_number] != inode.link_count):
+            print("INODE {inode_num} HAS {par_links} LINKS BUT LINKCOUNT IS {link_count}".format(inode_num = inode.inode_number, par_links = links[inode.inode_number], link_count = inode.link_count))
+
+
+        
 
 
 
@@ -137,12 +171,9 @@ def main():
         print("Unable to read csv.")
         sys.exit(1)  # might need to do some other stuff instead
 
-    if group.num_free_blocks != (group.total_num_blocks_in_group - len(free_blocks)):
-        print("")
-
-    
 
     inode_errors(inodes, free_inodes, superblock, group)
+    direct_entries_errors(inodes, direct_entries, superblock)
 
     if inconsistencies_found:
         sys.exit(2)
