@@ -1,7 +1,7 @@
 import sys
 import csv
 
-inconsistencies_found = False
+
 alloc_inodes = []
 
 
@@ -44,9 +44,9 @@ class DIRENT:
 class INDIRECT:
     def __init__(self, row):
         self.parent_inode_number = int(row[1])
-        self.indirextion = int(row[2])
+        self.indirection = int(row[2])
         self.logical_block_offset = int(row[3])
-        self.indierct_block_number = int(row[4])
+        self.indirect_block_number = int(row[4])
         self.reference_block_number = int(row[5])
 
 
@@ -63,8 +63,8 @@ class INODE:
         self.last_access = row[9]
         self.file_size = int(row[10])
         self.block_space = int(row[11])
-        self.block_list = direct_and_indirect[12:24]
-        self.indirect_list = direct_and_indirect[24:27]
+        self.block_list = direct_and_indirect[0:12]
+        self.indirect_list = direct_and_indirect[12:15]
 
 
 class allocated_block:
@@ -83,53 +83,6 @@ def inode_errors(inodes, free_inodes, superblock, group):
             alloc_inodes.append(inode_val)
             if inode_val in free_inodes:
                 alloc_inodes.append(inode_val)
-<<<<<<< HEAD
-                print("ALLOCATED INODE {inode_num} ON FREELIST".format(inode_num = inode_val))
-                inconsistencies_found = True
-        
-            
-    for alloc_inode_val in range(superblock.first_nonres_inode, group.total_num_inodes_in_group):
-        if alloc_inode_val not in alloc_inodes and alloc_inode_val not in free_inodes:
-            print("UNALLOCATED INODE {inode_num} NOT ON FREELIST".format(inode_num = alloc_inode_val))
-            inconsistencies_found = True
-
-def direct_entries_errors(inodes, direct_entries, superblock):
-    
-    counter = 0
-    links = {}
-    inode_parent = {}
-    #need to populate parent dictionary
-    for dir in direct_entries:
-        if dir.name != "'.'" and dir.name != "'..'":
-            inode_parent[dir.inode_number] = dir.parent_inode_number
-    
-    for dir in direct_entries:
-        if(dir.inode_number < 0 or dir.inode_number > superblock.num_of_inodes):
-            print("DIRECTORY INODE {inode_num} NAME {dir_name} INVALID INODE {dir_inode_num}".format(inode_num = dir.parent_inode_number, dir_name = dir.name, dir_inode_num 
-            = dir.inode_number))
-        elif(dir.inode_number not in alloc_inodes):
-            print("DIRECTORY INODE {inode_num} NAME {dir_name} UNALLOCATED INODE {dir_inode_num}".format(dir_inode_num 
-            = dir.inode_number, dir_name = dir.name, inode_num = dir.parent_inode_number))
-        elif(dir.name is "'.'" and dir.parent_inode_number != dir.inode_number):
-            print("DIRECTORY INODE {inode_num} NAME '.' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
-            = dir.inode_number, inode_num = dir.parent_inode_number))
-        elif(dir.name is not "'.'" and dir.name is not "'..'"):
-            if(dir.inode_number not in links):
-                 links[dir.inode_number] = 1
-            else:
-                 links[dir.inode_number]+=1
-    
-    for inode in inodes:
-        if(links[inode.inode_number] != inode.link_count):
-            print("INODE {inode_num} HAS {par_links} LINKS BUT LINKCOUNT IS {link_count}".format(inode_num = inode.inode_number, par_links = links[inode.inode_number], link_count = inode.link_count))
-
-
-        
-
-
-
-    
-=======
                 print("ALLOCATED INODE {inode_num} ON FREELIST".format(
                     inode_num=inode_val))
 
@@ -137,10 +90,10 @@ def direct_entries_errors(inodes, direct_entries, superblock):
         if alloc_inode_val not in alloc_inodes and alloc_inode_val not in free_inodes:
             print("UNALLOCATED INODE {inode_num} NOT ON FREELIST".format(
                 inode_num=alloc_inode_val))
->>>>>>> bcc9658df2a35b8e8d664b2e7dceda5d295cbf82
 
 
 def main():
+    inconsistencies_found = False
     free_blocks = []
     free_inodes = []
     inodes = []
@@ -148,6 +101,7 @@ def main():
     indirect_entries = []
     superblock = None
     group = None
+    allocated_blocks = {}
 
     if(len(sys.argv) != 2):
         print("Error in the input argument.")
@@ -186,138 +140,145 @@ def main():
         print("Unable to read csv.")
         sys.exit(1)  # might need to do some other stuff instead
 
-<<<<<<< HEAD
-=======
-    if group.num_free_blocks != (group.total_num_blocks_in_group - len(free_blocks)):
-        print("")
->>>>>>> bcc9658df2a35b8e8d664b2e7dceda5d295cbf82
-
     inode_errors(inodes, free_inodes, superblock, group)
-    direct_entries_errors(inodes, direct_entries, superblock)
+    # direct_entries_errors(inodes, direct_entries, superblock)
 
     for inode in inodes:
+        # print(inode.indirect_list)
         # if inode.file_type == 's':
-         #   continue
+        #   continue
+        # print(inode.block_list)
+        # print(superblock.blocks_per_group)
         for count, data_block in enumerate(inode.block_list):
+            # print(count)
             if data_block != 0:
-                continue
-                if data_block < 0 or data_block >= superblock.blocks_per_group:
+                if data_block < 0 or data_block >= superblock.num_of_blocks:
                     print("INVALID BLOCK " + str(data_block) + " IN INODE " +
                           str(inode.inode_number) + " AT OFFSET " + str(count))
                     inconsistencies_found = True
-                if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size:
+                if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size):
                     print("RESERVED BLOCK " + str(data_block) + " IN INODE " +
                           str(inode.inode_number) + " AT OFFSET " + str(count))
-                    inconsistencies_found=True
-                if data_block in allocated_blocks:
-                    allocated_blocks=[allocated_block(
-                    count, 0, inode.inode_number)]
+                    inconsistencies_found = True
+                if data_block not in allocated_blocks:
+                    allocated_blocks[data_block] = []
+                    allocated_blocks[data_block].append(
+                        allocated_block(count, 0, inode.inode_number))
                 else:
-                    block=[allocated_block(count, 0, inode.inode_number)]
-                    allocated_blocks[data_block].append=block
+                    allocated_blocks[data_block].append(
+                        allocated_block(count, 0, inode.inode_number))
 
-        data_block=inode.indirect_list[0]
+        data_block = inode.indirect_list[0]
         if data_block != 0:
-            if data_block < 0 or data_block >= superblock.blocks_per_group:
+            if data_block < 0 or data_block >= superblock.num_of_blocks:
                 print("INVALID INDIRECT BLOCK " + str(data_block) +
-                      " IN INODE " + str(inode.inode_number) + " AT OFFSET " + 12)
-                inconsistencies_found=True
-            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size:
-                print("RESERVED INDIRECT BLOCK " + str(data_block) + " IN INODE " + str(inode.inode_number) + " AT OFFSET " + 12))
-                inconsistencies_found=True
-            if data_block in allocated_blocks:
-                allocated_blocks=[allocated_block(12, 1, inode.inode_number)]
+                      " IN INODE " + str(inode.inode_number) + " AT OFFSET 12")
+                inconsistencies_found = True
+            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size):
+                print("RESERVED INDIRECT BLOCK " + str(data_block) +
+                      " IN INODE " + str(inode.inode_number) + " AT OFFSET 12")
+                inconsistencies_found = True
+            if data_block not in allocated_blocks:
+                allocated_blocks[data_block] = [allocated_block(
+                    12, 1, inode.inode_number)]
             else:
-                block=[allocated_block(12, 1, inode.inode_number)]
-                allocated_blocks[data_block].append=block
+                block = allocated_block(12, 1, inode.inode_number)
+                allocated_blocks[data_block].append(block)
 
-
-        data_block=inode.indirect_list[1]
+        data_block = inode.indirect_list[1]
         if data_block != 0:
-            if data_block < 0 or data_block >= superblock.blocks_per_group:
+            if data_block < 0 or data_block >= superblock.num_of_blocks:
                 print("INVALID DOUBLE INDIRECT BLOCK " + str(data_block) +
-                      " IN INODE " + str(inode.inode_number) + " AT OFFSET " + 268)
-                inconsistencies_found=True
-            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size:
-                print("RESERVED DOUBLE INDIRECT BLOCK " + str(data_block) + " IN INODE " + str(inode.inode_number) + " AT OFFSET " + 268))
-                inconsistencies_found=True
-            if data_block in allocated_blocks:
-                allocated_blocks=[allocated_block(268, 2, inode.inode_number)]
+                      " IN INODE " + str(inode.inode_number) + " AT OFFSET 268")
+                inconsistencies_found = True
+            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size):
+                print("RESERVED DOUBLE INDIRECT BLOCK " + str(data_block) +
+                      " IN INODE " + str(inode.inode_number) + " AT OFFSET 268")
+                inconsistencies_found = True
+            if data_block not in allocated_blocks:
+                allocated_blocks[data_block] = [allocated_block(
+                    268, 2, inode.inode_number)]
             else:
-                block=[allocated_block(268, 2, inode.inode_number)]
-                allocated_blocks[data_block].append=block
+                block = allocated_block(268, 2, inode.inode_number)
+                allocated_blocks[data_block].append(block)
 
-
-        data_block=inode.indirect_list[2]
+        data_block = inode.indirect_list[2]
         if data_block != 0:
-            if data_block < 0 or data_block >= superblock.blocks_per_group:
+            if data_block < 0 or data_block >= superblock.num_of_blocks:
                 print("INVALID TRIPLE INDIRECT BLOCK " + str(data_block) +
-                      " IN INODE " + str(inode.inode_number) + " AT OFFSET " + 65804)
-                inconsistencies_found=True
-            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size:
-                print("RESERVED TRIPLE INDIRECT BLOCK " + str(data_block) + " IN INODE " + str(inode.inode_number) + " AT OFFSET " + 65804))
-                inconsistencies_found=True
-            if data_block in allocated_blocks:
-                allocated_blocks=[allocated_block(
+                      " IN INODE " + str(inode.inode_number) + " AT OFFSET 65804")
+                inconsistencies_found = True
+            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size):
+                print("RESERVED TRIPLE INDIRECT BLOCK " + str(data_block) +
+                      " IN INODE " + str(inode.inode_number) + " AT OFFSET 65804")
+                inconsistencies_found = True
+            if data_block not in allocated_blocks:
+                allocated_blocks[data_block] = [allocated_block(
                     65804, 3, inode.inode_number)]
             else:
-                block=[allocated_block(65804, 3, inode.inode_number)]
-                allocated_blocks[data_block].append=block
-
+                block = allocated_block(65804, 3, inode.inode_number)
+                allocated_blocks[data_block].append(block)
 
     for indirect in indirect_entries:
-        data_block=indirect.reference_block_number
+        data_block = indirect.reference_block_number
         if data_block != 0:
             if indirect.indirection == 1:
-                level="INDIRECT "
+                level = "INDIRECT "
             if indirect.indirection == 2:
-                level="DOUBLE INDIRECT "
+                level = "DOUBLE INDIRECT "
             elif indirect.indirection == 3:
-                level="TRIPLE INDIRECT "
-            if data_block < 0 or data_block >= superblock.blocks_per_group:
+                level = "TRIPLE INDIRECT "
+            if data_block < 0 or data_block >= superblock.num_of_blocks:
                 print("INVALID " + level + "BLOCK " + str(data_block) + " IN INODE " +
                       str(inode.inode_number) + " AT OFFSET " + str(indirect.logical_byte_offset))
-                inconsistencies_found=True
-            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size:
+                inconsistencies_found = True
+            if data_block < (group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size):
                 print("INVALID " + level + "BLOCK " + str(data_block) + " IN INODE " +
                       str(inode.inode_number) + " AT OFFSET " + str(indirect.logical_byte_offset))
-                inconsistencies_found=True
+                inconsistencies_found = True
+            if data_block not in allocated_blocks:
+                allocated_blocks[data_block] = [allocated_block(
+                    indirect.logical_block_offset, indirect.indirection, indirect.parent_inode_number)]
+            else:
+                block = allocated_block(
+                    indirect.logical_block_offset, indirect.indirection, indirect.parent_inode_number)
+                allocated_blocks[data_block].append(block)
 
-
-
-
-    for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size, superblock.num_of_blocks):
-        if data_block in allocated_blocks and len(allocated_blocks[data_block]) > 1:
-            for index in range(0, len(allocated_blocks[data_block])):
-                info=allocated_blocks[data_block]
-                if (data[index].level == 0):
-                    print("DUPLICATE BLOCK " + str(data_block) + " IN INODE " + str(info.inode_number) + " AT OFFSET " str(info.offset))
-                    inconsistencies_found=True
-                elif (data[index].level == 1):
-                    print("DUPLICATE INDIRECT BLOCK " + str(data_block) + " IN INODE " + str(info.inode_number) + " AT OFFSET " str(info.offset))
-                    inconsistencies_found=True
-                elif (data[index].level == 2):
-                    print("DUPLICATE DOUBLE BLOCK " + str(data_block) + " IN INODE " + str(info.inode_number) + " AT OFFSET " str(info.offset))
-                    inconsistencies_found=True
-                else:
-                    print("DUPLICATE TRIPLE BLOCK " + str(data_block) + " IN INODE " + str(info.inode_number) + " AT OFFSET " str(info.offset))
-                    inconsistencies_found=True
-
-    for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size, superblock.num_of_blocks):
+    for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size), superblock.num_of_blocks):
         if data_block not in allocated_blocks and data_block not in free_blocks:
             print("UNREFERNCED BLOCK " + str(data_block))
-            inconsistencies_found=True
+            inconsistencies_found = True
 
-    for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size, superblock.num_of_blocks):
-        if data_block in allocated_block and data_block in free_blocks:
+    for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size), superblock.num_of_blocks):
+        if data_block in allocated_blocks and data_block in free_blocks:
             print("ALLOCATED BLOCK " + str(data_block) + " ON FREELIST")
-            inconsistencies_found=True
+            inconsistencies_found = True
 
+    for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size), superblock.num_of_blocks):
+        if data_block in allocated_blocks and len(allocated_blocks[data_block]) > 1:
+            data = allocated_blocks[data_block]
+            # print(len(data))
+            for index in range(0, len(data)):
+                # print(len(info))
+                # print(data[index].level)
+                if (data[index].level == 0):
+                    print("DUPLICATE BLOCK " + str(data_block) + " IN INODE " +
+                          str(data[index].inode_number) + " AT OFFSET " + str(data[index].offset))
+                    inconsistencies_found = True
+                elif (data[index].level == 1):
+                    print("DUPLICATE INDIRECT BLOCK " + str(data_block) + " IN INODE " +
+                          str(data[index].inode_number) + " AT OFFSET " + str(data[index].offset))
+                    inconsistencies_found = True
+                elif (data[index].level == 2):
+                    print("DUPLICATE DOUBLE INDIRECT BLOCK " + str(data_block) + " IN INODE " +
+                          str(data[index].inode_number) + " AT OFFSET " + str(data[index].offset))
+                    inconsistencies_found = True
+                else:
+                    print("DUPLICATE TRIPLE INDIRECT BLOCK " + str(data_block) + " IN INODE " +
+                          str(data[index].inode_number) + " AT OFFSET " + str(data[index].offset))
+                    inconsistencies_found = True
 
-
-
-
-    if inconsistencies_found:
+    if inconsistencies_found is True:
         sys.exit(2)
 
     sys.exit(0)
