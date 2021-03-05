@@ -1,6 +1,7 @@
 import sys
 import csv
 
+inconsistencies_found = False
 
 class SUPERBLOCK:
     """Creates a class for the information relating to the superblock."""
@@ -48,7 +49,7 @@ class INDIRECT:
 
 
 class INODE:
-    def __init__(self, row):
+    def __init__(self, row, direct_and_indirect):
         self.inode_number = int(row[1])
         self.file_type = row[2]
         self.mode = int(row[3])
@@ -60,6 +61,13 @@ class INODE:
         self.last_access = row[9]
         self.file_size = int(row[10])
         self.block_space = int(row[11])
+        self.block_list = direct_and_indirect[12:24]
+        self.indirect_list = direct_and_indirect[24:27]
+
+
+
+#def block_checker(free_blocks, superblock, group):
+
 
 def inode_errors(inodes, free_inodes, superblock, group):
     alloc_inodes = []
@@ -83,13 +91,14 @@ def inode_errors(inodes, free_inodes, superblock, group):
 
 
 def main():
-    
-    inconsistencies_found = False
     free_blocks = []
     free_inodes = []
     inodes = []
     direct_entries = []
     indirect_entries = []
+    superblock = None
+    group = None
+
 
     if(len(sys.argv) != 2):
         print("Error in the input argument.")
@@ -109,9 +118,11 @@ def main():
                     #print("freeblocks")
                 elif row[0] == 'IFREE':
                     free_inodes.append(int(row[1]))  # IRFREE action
-                    #print("freeinodes")
                 elif row[0] == 'INODE':
-                    inode = INODE(row)
+                    direct_and_indirect = []
+                    for i in range(12, 27):
+                        direct_and_indirect.append(int(row[i]))
+                    inode = INODE(row, direct_and_indirect)
                     inodes.append(inode)
                     #print("inodes")
                 elif row[0] == 'DIRENT':
