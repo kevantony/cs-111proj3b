@@ -1,8 +1,9 @@
 import sys
 import csv
 
-
+inconsistencies_found = False
 alloc_inodes = []
+
 
 
 class SUPERBLOCK:
@@ -66,7 +67,6 @@ class INODE:
         self.block_list = direct_and_indirect[0:12]
         self.indirect_list = direct_and_indirect[12:15]
 
-
 class allocated_block:
     def __init__(self, offset, level, inode_number):
         self.offset = offset
@@ -83,13 +83,62 @@ def inode_errors(inodes, free_inodes, superblock, group):
             alloc_inodes.append(inode_val)
             if inode_val in free_inodes:
                 alloc_inodes.append(inode_val)
-                print("ALLOCATED INODE {inode_num} ON FREELIST".format(
-                    inode_num=inode_val))
-
+                print("ALLOCATED INODE {inode_num} ON FREELIST".format(inode_num = inode_val))
+                inconsistencies_found = True
+        
+            
     for alloc_inode_val in range(superblock.first_nonres_inode, group.total_num_inodes_in_group):
         if alloc_inode_val not in alloc_inodes and alloc_inode_val not in free_inodes:
-            print("UNALLOCATED INODE {inode_num} NOT ON FREELIST".format(
-                inode_num=alloc_inode_val))
+            print("UNALLOCATED INODE {inode_num} NOT ON FREELIST".format(inode_num = alloc_inode_val))
+            inconsistencies_found = True
+
+def direct_entries_errors(inodes, direct_entries, superblock):
+    counter = 0
+    links = {}
+    inode_parent = {}
+    #need to populate parent dictionary
+    for dir in direct_entries:
+        if dir.name != "'.'" and dir.name != "'..'":
+            inode_parent[dir.inode_number] = dir.parent_inode_number
+    
+    
+    for dir in direct_entries:
+        if(dir.inode_number < 0 or dir.inode_number > superblock.num_of_inodes):
+            print("DIRECTORY INODE {inode_num} NAME {dir_name} INVALID INODE {dir_inode_num}".format(inode_num = dir.parent_inode_number, dir_name = dir.name, dir_inode_num 
+            = dir.inode_number))
+            inconsistencies_found = True
+        elif(dir.inode_number not in alloc_inodes):
+            print("DIRECTORY INODE {inode_num} NAME {dir_name} UNALLOCATED INODE {dir_inode_num}".format(dir_inode_num 
+            = dir.inode_number, dir_name = dir.name, inode_num = dir.parent_inode_number))
+            inconsistencies_found = True
+        elif(dir.name is not "'.'" and dir.name is not "'..'"):
+            if(dir.inode_number not in links):
+                 links[dir.inode_number] = 1
+            else:
+                 links[dir.inode_number]+=1
+
+    
+    for inode in inodes:
+        if(inode.inode_number not in links):
+            links[inode.inode_number] = 0
+        if(links[inode.inode_number] != inode.link_count):
+            print("INODE {inode_num} HAS {par_links} LINKS BUT LINKCOUNT IS {link_count}".format(inode_num = inode.inode_number, par_links = links[inode.inode_number], link_count = inode.link_count))
+
+    for dir in direct_entries:
+        if(dir.name is "'.'" and dir.parent_inode_number != dir.inode_number):
+            print("DIRECTORY INODE {inode_num} NAME '.' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
+            = dir.parent_inode_number, inode_num = dir.inode_number))
+        if(dir.name is "'..'" and inode_parent[dir.parent_inode_number] != dir.inode_number):
+            print("DIRECTORY INODE {inode_num} NAME '..' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
+            = dir.parent_inode_number, inode_num = dir.inode_number))
+
+            
+
+        
+
+
+
+    
 
 
 def main():
@@ -140,9 +189,7 @@ def main():
         print("Unable to read csv.")
         sys.exit(1)  # might need to do some other stuff instead
 
-    inode_errors(inodes, free_inodes, superblock, group)
-    # direct_entries_errors(inodes, direct_entries, superblock)
-
+    
     for inode in inodes:
         # print(inode.indirect_list)
         # if inode.file_type == 's':
@@ -246,7 +293,7 @@ def main():
 
     for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size), superblock.num_of_blocks):
         if data_block not in allocated_blocks and data_block not in free_blocks:
-            print("UNREFERNCED BLOCK " + str(data_block))
+            print("UNREFERENCED BLOCK " + str(data_block))
             inconsistencies_found = True
 
     for data_block in range((group.blocknum_of_first_inode_blocks + (group.total_num_inodes_in_group*superblock.inode_size)/superblock.block_size), superblock.num_of_blocks):
@@ -278,10 +325,19 @@ def main():
                           str(data[index].inode_number) + " AT OFFSET " + str(data[index].offset))
                     inconsistencies_found = True
 
+    inode_errors(inodes, free_inodes, superblock, group)
+    direct_entries_errors(inodes, direct_entries, superblock)
+
     if inconsistencies_found is True:
         sys.exit(2)
 
     sys.exit(0)
+
+
+
+
+
+    
 
 
 if __name__ == '__main__':
