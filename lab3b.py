@@ -101,7 +101,6 @@ def direct_entries_errors(inodes, direct_entries, superblock):
         if dir.name != "'.'" and dir.name != "'..'":
             inode_parent[dir.inode_number] = dir.parent_inode_number
     
-    
     for dir in direct_entries:
         if(dir.inode_number < 0 or dir.inode_number > superblock.num_of_inodes):
             print("DIRECTORY INODE {inode_num} NAME {dir_name} INVALID INODE {dir_inode_num}".format(inode_num = dir.parent_inode_number, dir_name = dir.name, dir_inode_num 
@@ -124,22 +123,20 @@ def direct_entries_errors(inodes, direct_entries, superblock):
         if(links[inode.inode_number] != inode.link_count):
             print("INODE {inode_num} HAS {par_links} LINKS BUT LINKCOUNT IS {link_count}".format(inode_num = inode.inode_number, par_links = links[inode.inode_number], link_count = inode.link_count))
 
-    for dir in direct_entries:
-        if(dir.name is "'.'" and dir.parent_inode_number != dir.inode_number):
-            print("DIRECTORY INODE {inode_num} NAME '.' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
-            = dir.parent_inode_number, inode_num = dir.inode_number))
-        if(dir.name is "'..'" and inode_parent[dir.parent_inode_number] != dir.inode_number):
-            print("DIRECTORY INODE {inode_num} NAME '..' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
-            = dir.parent_inode_number, inode_num = dir.inode_number))
-
-            
-
-        
-
-
 
     
-
+    for dir in direct_entries:
+        if(dir.name is "'.'" and dir.parent_inode_number != dir.inode_number):
+            print("DIRECTORY INODE {dir_inode_num} NAME '.' LINK TO INODE {inode_num} SHOULD BE {dir_inode_num}".format(dir_inode_num 
+            = dir.parent_inode_number, inode_num = dir.inode_number))
+        if dir.name == "'..'":
+            if(dir.parent_inode_number in inode_parent):
+                if(inode_parent[dir.parent_inode_number] != dir.inode_number):
+                    print("DIRECTORY INODE {inode_num} NAME '..' LINK TO INODE {dir_inode_num} SHOULD BE {inode_num}".format(dir_inode_num 
+                    = dir.parent_inode_number, inode_num = dir.inode_number))
+            elif dir.inode_number != 2:
+                print("DIRECTORY INODE {dir_inode_num} NAME '..' LINK TO INODE {inode_num} SHOULD BE 2".format(dir_inode_num 
+                    = dir.parent_inode_number, inode_num = dir.inode_number))
 
 def main():
     inconsistencies_found = False
@@ -186,7 +183,7 @@ def main():
                     indirect_entries.append(indirect_entry)
                     # print("indirectentrs")
     except:
-        print("Unable to read csv.")
+        print >> sys.stderr, "Unable to read csv."
         sys.exit(1)  # might need to do some other stuff instead
 
     
